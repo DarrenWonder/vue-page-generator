@@ -5,6 +5,8 @@ const config_loader_1 = require("../utils/config-loader");
 const tools_1 = require("../utils/tools");
 const fs = require("fs-extra");
 const path = require("path");
+const ora = require('ora')
+const chalk = require('chalk');
 class Route {
     constructor() {
         this.program = commander;
@@ -17,9 +19,10 @@ class Route {
             .option('-p, --path <path>', '指定路由路径')
             .parse(process.argv);
         if (typeof this.program.path === 'undefined') {
-            console.error('需要指定路由');
+            console.error(chalk.red('需要指定路由'));
             process.exit(1);
         }
+        this.spinner = ora('开始生成文件...').start();
         this.loader = new config_loader_1.ConfigLoader();
         this.parsePath(this.program.path);
     }
