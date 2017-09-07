@@ -7,6 +7,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const ora = require('ora')
 const chalk = require('chalk');
+const log = console.log
 class Route {
     constructor() {
         this.program = commander;
@@ -18,9 +19,9 @@ class Route {
             .version(this.version)
             .option('-p, --path <path>', '指定路由路径')
             .parse(process.argv);
-        if (typeof this.program.path === 'undefined') {
-            chalk.red('\n⚠️  必须指定路由');
-            process.exit(1);
+        if (this.program.path.trim() === '') {
+          log(chalk.red('\n⚠️  必须指定路由'));
+          process.exit(1);
         }
         this.spinner = ora('开始生成文件...').start();
         this.loader = new config_loader_1.ConfigLoader();
@@ -36,14 +37,13 @@ class Route {
         const fileName = tools_1.default.camelCase(path.basename(p)) + '.vue';
         const filePath = pagePath + '/' + fileName;
         this.generateFile(filePath);
-        chalk.green(`\n✔️ 生成${fileName}页面成功`);
         const ps = p.split('/');
         if (ps.length === 1) {
             this.generateFile(`${this.loader.config.page}/${ps[0]}/Index.vue`);
-            chalk.green(`\n✔️ 生成Index.vue成功`);
         }
     }
     generateRouter(p, routerPath) {
+        const self = this
         const filePath = routerPath + '/index.js';
         const arr = p.split('/');
         fs.pathExists(filePath, function (err, exists) {
@@ -86,9 +86,9 @@ class Route {
                     }
                     const ws = fs.createWriteStream(filePath);
                     ws.write(newData);
-                    chalk.green(`\n✔️ 生成路由记录成功`)
+                    log(chalk.green(`\n✔️ 生成路由记录成功`));
                 } else {
-                    chalk.red('✖️ 路由记录已存在！')
+                    log(chalk.red('✖️ 路由记录已存在！'));
                 }
             });
         });
@@ -109,22 +109,27 @@ class Route {
                 });
                 const ws = fs.createWriteStream(this.loader.config.router + '/index.js');
                 ws.write(s2);
-                chalk.green(`\n✔️ 生成主路由成功`);
+                log(chalk.green(`\n✔️ 生成主路由成功`));
             });
         }
         this.spinner.stop();
     }
     generateFile(p) {
+        const self = this
         fs.pathExists(p, function (err, exists) {
             if (exists) {
-                this.spinner.fail(chalk.red('✖️ 文件已经存在了，不能再次生成！'));
+                self.spinner.fail(chalk.red('文件已经存在了，不能再次生成！'));
                 process.exit(1);
             }
             let template = '../template/starter.vue';
             if (path.basename(p) === 'Index.vue')
                 template = '../template/Index.vue';
             fs.copy(path.resolve(__dirname, template), p, err => {
-                console.log(err);
+              if (err) {
+                self.spinner.fail(chalk.red(err.message));
+                process.exit();
+              }
+              log(chalk.green(`\n✔️ 生成${p}页面成功`));
             });
         });
     }
